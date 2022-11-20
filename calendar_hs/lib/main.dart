@@ -194,6 +194,8 @@ class _MyHomePageState extends State<MyHomePage> {
       body: TableCalendar(
         firstDay: DateTime.utc(1900, 1, 1),
         lastDay: DateTime.utc(2200, 12, 31),
+        calendarStyle: CalendarStyle(todayDecoration: BoxDecoration(color: Colors.green.shade300, shape: BoxShape.circle),
+        selectedDecoration: BoxDecoration(color: Colors.green.shade800, shape: BoxShape.circle)),
         focusedDay: _focusedDay,
         selectedDayPredicate: (day) {
           return isSameDay(_selectedDay, day);
