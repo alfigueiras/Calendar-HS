@@ -133,6 +133,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   CheckboxListTile(
                     title: const Text("Events"),
                     value: _events,
+                    activeColor: Colors.red[300],
                     onChanged: (bool? value) {
                       setState(() {
                         _events = value;
@@ -142,6 +143,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   CheckboxListTile(
                     title: const Text("Tasks"),
                     value: _tasks,
+                    activeColor: Colors.blue[300],
                     onChanged: (bool? value) {
                       setState(() {
                         _tasks = value;
@@ -151,6 +153,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   CheckboxListTile(
                     title: const Text("Reminders"),
                     value: _reminders,
+                    activeColor: Colors.orange[200],
                     onChanged: (bool? value) {
                       setState(() {
                         _reminders = value;
