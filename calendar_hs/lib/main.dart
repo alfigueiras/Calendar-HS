@@ -10,14 +10,9 @@ CalendarFormat _calendarFormat = CalendarFormat.month;
 class DateEvents {
   String title;
   String details;
-  DateTime startHour;
-  DateTime endHour;
+  String type;
 
-  DateEvents(this.title, this.details, this.startHour, this.endHour);
-
-  DateTime get getStartHour {
-    return startHour;
-  }
+  DateEvents(this.title, this.details, this.type);
 }
 
 class MyApp extends StatelessWidget {
@@ -180,8 +175,11 @@ class _MyHomePageState extends State<MyHomePage> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
+        onPressed: () {
+          Navigator.push(context,
+              MaterialPageRoute(builder: ((context) => const AddEventPage())));
+        },
+        tooltip: 'Add Events',
         child: const Icon(Icons.add),
       ),
       drawer: Drawer(
@@ -271,5 +269,113 @@ class _MyHomePageState extends State<MyHomePage> {
         )),
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );
+  }
+}
+
+class AddEventPage extends StatefulWidget {
+  const AddEventPage({super.key});
+
+  @override
+  State<AddEventPage> createState() => _AddEventPage();
+}
+
+class _AddEventPage extends State<AddEventPage> {
+  var titleController = TextEditingController();
+  var detailController = TextEditingController();
+
+  String _eventTitle = "Title";
+  String _eventType = "Event";
+  String _eventDetails = "";
+  var eventOptions = ["Event", "Task", "Reminder"];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: AppBar(
+          title: const Text("Add Event"),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_outlined),
+            tooltip: "Go Back",
+            onPressed: () {
+              Navigator.pop(context);
+            },
+          ),
+          actions: <Widget>[
+            IconButton(
+              icon: const Icon(Icons.info_outline_rounded),
+              tooltip: 'Info',
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) {
+                    return AlertDialog(
+                      title: const Text("Info"),
+                      content: const Text(
+                          "To add an event just write some title, choose your event type, and write some details about it if you want! After all that just click on the check mark and you'll be all set!" ),
+                      actions: [
+                        TextButton(
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                            child: const Text("OK"))
+                      ],
+                    );
+                  },
+                );
+              },
+            )
+          ],
+        ),
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+                padding: const EdgeInsets.all(5),
+                child: TextField(
+                  textAlign: TextAlign.center,
+                  decoration: const InputDecoration(
+                      hintText: "Event Title",
+                      border: UnderlineInputBorder(),
+                      hintStyle: TextStyle(fontSize: 30, color: Colors.grey)),
+                  style: TextStyle(fontSize: 30, color: Colors.green[600]),
+                  controller: titleController,
+                )),
+            Container(
+                padding: const EdgeInsets.all(5),
+                child: DropdownButtonFormField(
+                  /* Pode não dar muito fixe, se não der voltar ao DropDownButton */
+                  decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.calendar_month_outlined)),
+                  value: _eventType,
+                  items: eventOptions.map((String eventOptions) {
+                    return DropdownMenuItem(
+                        value: eventOptions, child: Text(eventOptions));
+                  }).toList(),
+                  onChanged: (newValue) {
+                    setState(() {
+                      _eventType = newValue!;
+                    });
+                  },
+                )),
+            Container(
+                padding: const EdgeInsets.all(5),
+                child: TextField(
+                  decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.not_listed_location_outlined),
+                      hintText: "Details",
+                      border: UnderlineInputBorder(),
+                      hintStyle: TextStyle(fontSize: 15, color: Colors.grey)),
+                  style: const TextStyle(fontSize: 15),
+                  controller: detailController,
+                ))
+          ],
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          tooltip: 'Add Event',
+          child: const Icon(Icons.check),
+        ));
   }
 }
