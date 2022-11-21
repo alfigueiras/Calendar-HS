@@ -7,6 +7,19 @@ void main() {
 
 CalendarFormat _calendarFormat = CalendarFormat.month;
 
+class DateEvents {
+  String title;
+  String details;
+  DateTime startHour;
+  DateTime endHour;
+
+  DateEvents(this.title, this.details, this.startHour, this.endHour);
+
+  DateTime get getStartHour {
+    return startHour;
+  }
+}
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -53,10 +66,28 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
+  late final ValueNotifier<List<DateEvents>> _selectedEvents;
+  Map<DateTime, List<DateEvents>> _eventsMap = {};
   var _counter = 0;
   bool? _tasks = true;
   bool? _events = true;
   bool? _reminders = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDay = _focusedDay;
+    _selectedEvents = ValueNotifier(_getEventsForDay(_selectedDay!));
+  }
+
+  void dispose() {
+    _selectedEvents.dispose();
+    super.dispose();
+  }
+
+  List<DateEvents> _getEventsForDay(DateTime day) {
+    return _eventsMap[day] ?? [];
+  }
 
   void _incrementCounter() {
     setState(() {
@@ -78,6 +109,81 @@ class _MyHomePageState extends State<MyHomePage> {
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
     return Scaffold(
+      appBar: AppBar(
+        // Here we take the value from the MyHomePage object that was created by
+        // the App.build method, and use it to set our appbar title.
+        title: Text(widget.title),
+        actions: <Widget>[
+          IconButton(
+            icon: const Icon(Icons.info_outline_rounded),
+            tooltip: 'Info',
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) {
+                  return AlertDialog(
+                    title: const Text("Info"),
+                    content: const Text(
+                        "Calendário desenvolvido para o projeto de AppDev"),
+                    actions: [
+                      TextButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          child: const Text("OK"))
+                    ],
+                  );
+                },
+              );
+            },
+          )
+        ],
+      ),
+      body: TableCalendar(
+        firstDay: DateTime.utc(1900, 1, 1),
+        lastDay: DateTime.utc(2200, 12, 31),
+        calendarStyle: CalendarStyle(
+          canMarkersOverflow: true,
+          todayDecoration: BoxDecoration(
+              color: Colors.green.shade300, shape: BoxShape.circle),
+          selectedDecoration: BoxDecoration(
+              color: Colors.green.shade800, shape: BoxShape.circle),
+          todayTextStyle: const TextStyle(
+              fontWeight: FontWeight.bold, fontSize: 18.0, color: Colors.white),
+        ),
+        focusedDay: _focusedDay,
+        selectedDayPredicate: (day) {
+          return isSameDay(_selectedDay, day);
+        },
+        onDaySelected: ((
+          selectedDay,
+          focusedDay,
+        ) {
+          setState(() {
+            _selectedDay = selectedDay;
+            _focusedDay = focusedDay;
+          });
+          _selectedEvents.value = _getEventsForDay(selectedDay);
+        }),
+        headerStyle:
+            const HeaderStyle(titleCentered: true, formatButtonVisible: false),
+        calendarFormat: _calendarFormat,
+        onFormatChanged: (format) {
+          if (_calendarFormat != format) {
+            setState(() {
+              _calendarFormat = format;
+            });
+          }
+        },
+        onPageChanged: (focusedDay) {
+          _focusedDay = focusedDay;
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _incrementCounter,
+        tooltip: 'Increment',
+        child: const Icon(Icons.add),
+      ),
       drawer: Drawer(
         child: SingleChildScrollView(
             child: Column(
@@ -163,70 +269,6 @@ class _MyHomePageState extends State<MyHomePage> {
                 ])),
           ],
         )),
-      ),
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-        actions: <Widget>[
-          IconButton(
-            icon: const Icon(Icons.info_outline_rounded),
-            tooltip: 'Info',
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (context) {
-                  return AlertDialog(
-                    title: const Text("Info"),
-                    content: const Text(
-                        "Calendário desenvolvido para o projeto de AppDev"),
-                    actions: [
-                      TextButton(
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                          },
-                          child: const Text("OK"))
-                    ],
-                  );
-                },
-              );
-            },
-          )
-        ],
-      ),
-      body: TableCalendar(
-        firstDay: DateTime.utc(1900, 1, 1),
-        lastDay: DateTime.utc(2200, 12, 31),
-        calendarStyle: CalendarStyle(todayDecoration: BoxDecoration(color: Colors.green.shade300, shape: BoxShape.circle),
-        selectedDecoration: BoxDecoration(color: Colors.green.shade800, shape: BoxShape.circle)),
-        focusedDay: _focusedDay,
-        selectedDayPredicate: (day) {
-          return isSameDay(_selectedDay, day);
-        },
-        onDaySelected: ((selectedDay, focusedDay) {
-          setState(() {
-            _selectedDay = selectedDay;
-            _focusedDay = focusedDay;
-          });
-        }),
-        headerStyle:
-            const HeaderStyle(titleCentered: true, formatButtonVisible: false),
-        calendarFormat: _calendarFormat,
-        onFormatChanged: (format) {
-          if (_calendarFormat != format) {
-            setState(() {
-              _calendarFormat = format;
-            });
-          }
-        },
-        onPageChanged: (focusedDay) {
-          _focusedDay = focusedDay;
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
