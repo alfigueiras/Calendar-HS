@@ -201,16 +201,6 @@ class _MyHomePageState extends State<MyHomePage> {
                 padding: const EdgeInsets.all(5),
                 child: Wrap(runSpacing: 16, children: [
                   ListTile(
-                    leading: const Icon(Icons.calendar_view_day_outlined),
-                    title: const Text("Day"),
-                    onTap: () {
-                      setState(() {
-                        _calendarFormat = CalendarFormat.twoWeeks;
-                      });
-                      Navigator.pop(context);
-                    },
-                  ),
-                  ListTile(
                     leading: const Icon(Icons.calendar_view_week_outlined),
                     title: const Text("Week"),
                     onTap: () {
