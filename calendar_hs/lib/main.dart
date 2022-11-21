@@ -60,19 +60,40 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   DateTime _focusedDay = DateTime.now();
-  DateTime? _selectedDay;
+  late DateTime _selectedDay;
   late final ValueNotifier<List<DateEvents>> _selectedEvents;
   Map<DateTime, List<DateEvents>> _eventsMap = {};
-  var _counter = 0;
+
   bool? _tasks = true;
   bool? _events = true;
   bool? _reminders = true;
+
+  
+  void _awaitReturnValueFromSecondScreen(BuildContext context) async {
+
+    // start the SecondScreen and wait for it to finish with a result
+    final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => AddEventPage(),
+        ));
+
+    // after the SecondScreen result comes back update the Text widget with it
+    setState(() {
+      if (_eventsMap[_selectedDay] != null){
+        _eventsMap[_selectedDay]!.add(result);
+      } else{
+        _eventsMap[_selectedDay]=[result];
+      }
+    });
+  }
+
 
   @override
   void initState() {
     super.initState();
     _selectedDay = _focusedDay;
-    _selectedEvents = ValueNotifier(_getEventsForDay(_selectedDay!));
+    _selectedEvents = ValueNotifier(_getEventsForDay(_selectedDay));
   }
 
   void dispose() {
@@ -82,17 +103,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
   List<DateEvents> _getEventsForDay(DateTime day) {
     return _eventsMap[day] ?? [];
-  }
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
   }
 
   @override
@@ -118,8 +128,8 @@ class _MyHomePageState extends State<MyHomePage> {
                 builder: (context) {
                   return AlertDialog(
                     title: const Text("Info"),
-                    content: const Text(
-                        "Calendário desenvolvido para o projeto de AppDev"),
+                    content: Text(
+                        _eventsMap.toString()),
                     actions: [
                       TextButton(
                           onPressed: () {
@@ -176,8 +186,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.push(context,
-              MaterialPageRoute(builder: ((context) => const AddEventPage())));
+          _awaitReturnValueFromSecondScreen(context);
         },
         tooltip: 'Add Events',
         child: const Icon(Icons.add),
@@ -270,13 +279,18 @@ class AddEventPage extends StatefulWidget {
 }
 
 class _AddEventPage extends State<AddEventPage> {
-  var titleController = TextEditingController();
-  var detailController = TextEditingController();
-
-  String _eventTitle = "Title";
+  TextEditingController titleController = TextEditingController();
+  TextEditingController detailController = TextEditingController();
   String _eventType = "Event";
-  String _eventDetails = "";
+
   var eventOptions = ["Event", "Task", "Reminder"];
+  
+  void _sendDataBack(BuildContext context) {
+    String title=titleController.text;
+    String details=detailController.text;
+    final event = DateEvents(title, details, _eventType);
+    Navigator.pop(context, event);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -305,7 +319,7 @@ class _AddEventPage extends State<AddEventPage> {
                       actions: [
                         TextButton(
                             onPressed: () {
-                              Navigator.of(context).pop();
+                              Navigator.pop(context);
                             },
                             child: const Text("OK"))
                       ],
@@ -362,7 +376,7 @@ class _AddEventPage extends State<AddEventPage> {
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: () {
-            Navigator.pop(context);
+            _sendDataBack(context);
           },
           tooltip: 'Add Event',
           child: const Icon(Icons.check),
