@@ -18,21 +18,11 @@ class DateEvents {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'HS Calendar',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
         primarySwatch: Colors.green,
       ),
       home: const MyHomePage(title: 'HS - Calendar'),
@@ -42,15 +32,6 @@ class MyApp extends StatelessWidget {
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
 
   final String title;
 
@@ -64,13 +45,17 @@ class _MyHomePageState extends State<MyHomePage> {
   late final ValueNotifier<List<DateEvents>> _selectedEvents;
   Map<DateTime, List<DateEvents>> _eventsMap = {};
 
-  bool? _tasks = true;
-  bool? _events = true;
-  bool? _reminders = true;
+  bool _tasks = true;
+  bool _events = true;
+  bool _reminders = true;
 
-  
+  Map<String, Color?> eventTypeColor = {
+    "Event": Colors.red[300],
+    "Reminder": Colors.orange[200],
+    "Task": Colors.blue[300]
+  };
+
   void _awaitReturnValueFromSecondScreen(BuildContext context) async {
-
     // start the SecondScreen and wait for it to finish with a result
     final result = await Navigator.push(
         context,
@@ -80,14 +65,13 @@ class _MyHomePageState extends State<MyHomePage> {
 
     // after the SecondScreen result comes back update the Text widget with it
     setState(() {
-      if (_eventsMap[_selectedDay] != null){
+      if (_eventsMap[_selectedDay] != null) {
         _eventsMap[_selectedDay]!.add(result);
-      } else{
-        _eventsMap[_selectedDay]=[result];
+      } else {
+        _eventsMap[_selectedDay] = [result];
       }
     });
   }
-
 
   @override
   void initState() {
@@ -102,21 +86,26 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   List<DateEvents> _getEventsForDay(DateTime day) {
-    return _eventsMap[day] ?? [];
+    var e = _eventsMap[day] ?? [];
+    List<DateEvents> eventList=[];
+    for (var i=0; i<e.length; i++){
+      if ((e[i].type=="Event") & (_events)){
+        eventList.add(e[i]);
+      }
+      else if ((e[i].type=="Task") & (_tasks)){
+        eventList.add(e[i]);
+      }
+      else if ((e[i].type=="Reminder") & (_reminders)){
+        eventList.add(e[i]);
+      };
+    }
+    return eventList;
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
         actions: <Widget>[
           IconButton(
@@ -128,8 +117,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 builder: (context) {
                   return AlertDialog(
                     title: const Text("Info"),
-                    content: Text(
-                        _eventsMap.toString()),
+                    content: Text(_eventsMap.toString()),
                     actions: [
                       TextButton(
                           onPressed: () {
@@ -144,46 +132,82 @@ class _MyHomePageState extends State<MyHomePage> {
           )
         ],
       ),
-      body: TableCalendar(
-        firstDay: DateTime.utc(1900, 1, 1),
-        lastDay: DateTime.utc(2200, 12, 31),
-        calendarStyle: CalendarStyle(
-          canMarkersOverflow: true,
-          todayDecoration: BoxDecoration(
-              color: Colors.green.shade300, shape: BoxShape.circle),
-          selectedDecoration: BoxDecoration(
-              color: Colors.green.shade800, shape: BoxShape.circle),
-          todayTextStyle: const TextStyle(
-              fontWeight: FontWeight.bold, fontSize: 18.0, color: Colors.white),
-        ),
-        focusedDay: _focusedDay,
-        selectedDayPredicate: (day) {
-          return isSameDay(_selectedDay, day);
-        },
-        onDaySelected: ((
-          selectedDay,
-          focusedDay,
-        ) {
-          setState(() {
-            _selectedDay = selectedDay;
-            _focusedDay = focusedDay;
-          });
-          _selectedEvents.value = _getEventsForDay(selectedDay);
-        }),
-        headerStyle:
-            const HeaderStyle(titleCentered: true, formatButtonVisible: false),
-        calendarFormat: _calendarFormat,
-        onFormatChanged: (format) {
-          if (_calendarFormat != format) {
-            setState(() {
-              _calendarFormat = format;
-            });
-          }
-        },
-        onPageChanged: (focusedDay) {
-          _focusedDay = focusedDay;
-        },
-      ),
+      body: SingleChildScrollView(
+          child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: TableCalendar(
+                firstDay: DateTime.utc(1900, 1, 1),
+                lastDay: DateTime.utc(2200, 12, 31),
+                eventLoader: _getEventsForDay,
+                calendarStyle: CalendarStyle(
+                  canMarkersOverflow: true,
+                  todayDecoration: BoxDecoration(
+                      color: Colors.green.shade300, shape: BoxShape.circle),
+                  selectedDecoration: BoxDecoration(
+                      color: Colors.green.shade800, shape: BoxShape.circle),
+                  todayTextStyle: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18.0,
+                      color: Colors.white),
+                ),
+                focusedDay: _focusedDay,
+                selectedDayPredicate: (day) {
+                  return isSameDay(_selectedDay, day);
+                },
+                onDaySelected: ((
+                  selectedDay,
+                  focusedDay,
+                ) {
+                  setState(() {
+                    _selectedDay = selectedDay;
+                    _focusedDay = focusedDay;
+                  });
+                  _selectedEvents.value = _getEventsForDay(selectedDay);
+                }),
+                headerStyle: const HeaderStyle(
+                    titleCentered: true, formatButtonVisible: false),
+                calendarFormat: _calendarFormat,
+                onFormatChanged: (format) {
+                  if (_calendarFormat != format) {
+                    setState(() {
+                      _calendarFormat = format;
+                    });
+                  }
+                },
+                onPageChanged: (focusedDay) {
+                  _focusedDay = focusedDay;
+                },
+              )),
+          ..._getEventsForDay(_selectedDay).map(
+            (event) => Container(
+              padding: const EdgeInsets.all(10),
+              child: ListTile(
+                trailing: OutlinedButton(child: const Icon(Icons.clear_outlined), onPressed: () {
+                  setState(() {
+                    _eventsMap[_selectedDay]!.remove(event);
+                  });
+                },),
+                shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(25))),
+                tileColor: eventTypeColor[event.type],
+                leading: const Padding(
+                  padding: EdgeInsets.only(top: 6),
+                  child: Icon(
+                    Icons.bookmark,
+                    color: Colors.white,
+                  ),
+                ),
+                title: Text(event.title),
+                subtitle: Text(event.details),
+              ),
+            ),
+          )
+        ],
+      )),
+
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           _awaitReturnValueFromSecondScreen(context);
@@ -239,7 +263,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     activeColor: Colors.red[300],
                     onChanged: (bool? value) {
                       setState(() {
-                        _events = value;
+                        _events = value ?? _events;
                       });
                     },
                   ),
@@ -249,7 +273,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     activeColor: Colors.blue[300],
                     onChanged: (bool? value) {
                       setState(() {
-                        _tasks = value;
+                        _tasks = value ?? _tasks;
                       });
                     },
                   ),
@@ -259,7 +283,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     activeColor: Colors.orange[200],
                     onChanged: (bool? value) {
                       setState(() {
-                        _reminders = value;
+                        _reminders = value ?? _reminders;
                       });
                     },
                   )
@@ -284,10 +308,10 @@ class _AddEventPage extends State<AddEventPage> {
   String _eventType = "Event";
 
   var eventOptions = ["Event", "Task", "Reminder"];
-  
+
   void _sendDataBack(BuildContext context) {
-    String title=titleController.text;
-    String details=detailController.text;
+    String title = titleController.text;
+    String details = detailController.text;
     final event = DateEvents(title, details, _eventType);
     Navigator.pop(context, event);
   }
@@ -315,7 +339,7 @@ class _AddEventPage extends State<AddEventPage> {
                     return AlertDialog(
                       title: const Text("Info"),
                       content: const Text(
-                          "To add an event just write some title, choose your event type, and write some details about it if you want! After all that just click on the check mark and you'll be all set!" ),
+                          "To add an event just write some title, choose your event type, and write some details about it if you want! After all that just click on the check mark and you'll be all set!"),
                       actions: [
                         TextButton(
                             onPressed: () {
