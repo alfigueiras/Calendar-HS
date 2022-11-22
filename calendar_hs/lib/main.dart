@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 void main() {
@@ -40,6 +43,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  late SharedPreferences prefs;
   DateTime _focusedDay = DateTime.now();
   late DateTime _selectedDay;
   late final ValueNotifier<List<DateEvents>> _selectedEvents;
@@ -49,11 +53,36 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _events = true;
   bool _reminders = true;
 
+
   Map<String, Color?> eventTypeColor = {
     "Event": Colors.red[300],
     "Reminder": Colors.orange[200],
     "Task": Colors.blue[300]
   };
+
+  prefsData() async {
+    prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _eventsMap = Map<DateTime, List<DateEvents>>.from(decodeMap(json.decode(prefs.getString("events") ?? "{}")));
+    });
+  }
+  
+  /* Literalmente a única cena que falta  */
+  Map<String, List<DateEvents>> encodeMap(Map<DateTime, List<DateEvents>> map) {
+    Map<String, List<DateEvents>> newMap = {};
+    map.forEach((key, value) {
+      newMap[key.toString()] = map[key]!;
+    });
+    return newMap;
+  }
+
+  Map<DateTime, List<DateEvents>> decodeMap(Map<String, List<DateEvents>> map) {
+    Map<DateTime, List<DateEvents>> newMap = {};
+    map.forEach((key, value) {
+      newMap[DateTime.parse(key)] = map[key]!;
+    });
+    return newMap;
+  }
 
   void _awaitReturnValueFromSecondScreen(BuildContext context) async {
     // start the SecondScreen and wait for it to finish with a result
@@ -70,6 +99,7 @@ class _MyHomePageState extends State<MyHomePage> {
       } else {
         _eventsMap[_selectedDay] = [result];
       }
+      prefs.setString("events", json.encode(encodeMap(_eventsMap)));
     });
   }
 
@@ -78,6 +108,7 @@ class _MyHomePageState extends State<MyHomePage> {
     super.initState();
     _selectedDay = _focusedDay;
     _selectedEvents = ValueNotifier(_getEventsForDay(_selectedDay));
+    prefsData();
   }
 
   void dispose() {
@@ -185,9 +216,10 @@ class _MyHomePageState extends State<MyHomePage> {
             (event) => Container(
               padding: const EdgeInsets.all(10),
               child: ListTile(
-                trailing: OutlinedButton(child: const Icon(Icons.clear_outlined), onPressed: () {
+                trailing: OutlinedButton(child: const Icon(Icons.clear_outlined, color: Colors.white,), onPressed: () {
                   setState(() {
                     _eventsMap[_selectedDay]!.remove(event);
+                    prefs.setString("events", json.encode(encodeMap(_eventsMap)));
                   });
                 },),
                 shape: const RoundedRectangleBorder(
