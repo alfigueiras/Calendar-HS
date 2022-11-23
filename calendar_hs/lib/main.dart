@@ -9,9 +9,11 @@ void main() {
   runApp(const MyApp());
 }
 
+
 CalendarFormat _calendarFormat = CalendarFormat.month;
 
-@JsonSerializable()
+
+//Event Class
 class DateEvents {
   String title;
   String details;
@@ -20,32 +22,40 @@ class DateEvents {
   DateEvents(this.title, this.details, this.type);
 }
 
-  Map<String, dynamic> encodeMap(Map<DateTime, List<DateEvents>> map) {
-    Map<String, dynamic> newMap = {};
-    map.forEach((key1, value1) {
-      map[key1]?.forEach((key2) {
-        newMap[key1.toString()]?[identityHashCode(key2)]?["title"]=key2.title;
-        newMap[key1.toString()]?[identityHashCode(key2)]?["details"]=key2.details;
-        newMap[key1.toString()]?[identityHashCode(key2)]?["type"]=key2.type;
-      });
+//Encode Map of Events to JSON
+Map<String, dynamic> encodeMap(Map<DateTime, List<DateEvents>> map) {
+  Map<String, dynamic> newMap = {};
+  map.forEach((key1, value1) {
+    map[key1]?.forEach((key2) {
+      newMap[key1.toString()]?[identityHashCode(key2)]?["title"] = key2.title;
+      newMap[key1.toString()]?[identityHashCode(key2)]?["details"] =
+          key2.details;
+      newMap[key1.toString()]?[identityHashCode(key2)]?["type"] = key2.type;
     });
-    return newMap;
-  }
+  });
+  return newMap;
+}
 
-  
-  Map<DateTime, List<DateEvents>> decodeMap(Map<String, dynamic> map) {
-    Map<DateTime, List<DateEvents>> newMap = {};
-    map.forEach((key1, value1) {
-      map[key1]?.forEach((key2, value2) {
-        if (newMap[key1] ==null){
-          newMap[DateTime.parse(key1)]=[DateEvents(map[key1]![key2]!["title"]!, map[key1]![key2]!["details"]!, map[key1]![key2]!["type"]!)];
-        } else{
-          newMap[DateTime.parse(key1)]!.add(DateEvents(map[key1]![key2]!["title"]!, map[key1]![key2]!["details"]!, map[key1]![key2]!["type"]!));
-        }
-       });
+//Decode Map of Events from JSON
+Map<DateTime, List<DateEvents>> decodeMap(Map<String, dynamic> map) {
+  Map<DateTime, List<DateEvents>> newMap = {};
+  map.forEach((key1, value1) {
+    map[key1]?.forEach((key2, value2) {
+      if (newMap[key1] == null) {
+        newMap[DateTime.parse(key1)] = [
+          DateEvents(map[key1]![key2]!["title"]!, map[key1]![key2]!["details"]!,
+              map[key1]![key2]!["type"]!)
+        ];
+      } else {
+        newMap[DateTime.parse(key1)]!.add(DateEvents(
+            map[key1]![key2]!["title"]!,
+            map[key1]![key2]!["details"]!,
+            map[key1]![key2]!["type"]!));
+      }
     });
-    return newMap;
-  }
+  });
+  return newMap;
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -72,16 +82,16 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  late SharedPreferences prefs;
+  SharedPreferences? prefs;
   DateTime _focusedDay = DateTime.now();
   late DateTime _selectedDay;
   late final ValueNotifier<List<DateEvents>> _selectedEvents;
   Map<DateTime, List<DateEvents>> _eventsMap = {};
 
+  //Checkboxes Values
   bool _tasks = true;
   bool _events = true;
   bool _reminders = true;
-
 
   Map<String, Color?> eventTypeColor = {
     "Event": Colors.red[300],
@@ -89,15 +99,17 @@ class _MyHomePageState extends State<MyHomePage> {
     "Task": Colors.blue[300]
   };
 
-  prefsData() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
+  
+  Future<void> prefsData() async {
+    prefs = await SharedPreferences.getInstance();
     setState(() {
-      
-      _eventsMap = Map<DateTime, List<DateEvents>>.from(decodeMap(json.decode(prefs.getString("events") ?? "{}")));
+      _eventsMap = Map<DateTime, List<DateEvents>>.from(
+          decodeMap(json.decode(prefs?.getString("events") ?? "{}")));
     });
   }
-  
-  void _awaitReturnValueFromSecondScreen(BuildContext context) async {
+
+  //Runs whenever we add a event and adds the event to the map of events, tries to save it to the preferences too
+  Future<void> _awaitReturnValueFromSecondScreen(BuildContext context) async {
     // start the SecondScreen and wait for it to finish with a result
     final result = await Navigator.push(
         context,
@@ -106,13 +118,17 @@ class _MyHomePageState extends State<MyHomePage> {
         ));
 
     // after the SecondScreen result comes back update the Text widget with it
-    setState(() {
-      if (_eventsMap[_selectedDay] != null) {
+    if (_eventsMap[_selectedDay] != null) {
+      setState(() {
         _eventsMap[_selectedDay]!.add(result);
-      } else {
+      });
+    } else {
+      setState(() {
         _eventsMap[_selectedDay] = [result];
-      }
-      prefs.setString("events", json.encode(encodeMap(_eventsMap)));
+      });
+    }
+    setState(() {
+      prefs?.setString("events", json.encode(encodeMap(_eventsMap)));
     });
   }
 
@@ -124,24 +140,19 @@ class _MyHomePageState extends State<MyHomePage> {
     prefsData();
   }
 
-  void dispose() {
-    _selectedEvents.dispose();
-    super.dispose();
-  }
 
   List<DateEvents> _getEventsForDay(DateTime day) {
     var e = _eventsMap[day] ?? [];
-    List<DateEvents> eventList=[];
-    for (var i=0; i<e.length; i++){
-      if ((e[i].type=="Event") & (_events)){
+    List<DateEvents> eventList = [];
+    for (var i = 0; i < e.length; i++) {
+      if ((e[i].type == "Event") & (_events)) {
+        eventList.add(e[i]);
+      } else if ((e[i].type == "Task") & (_tasks)) {
+        eventList.add(e[i]);
+      } else if ((e[i].type == "Reminder") & (_reminders)) {
         eventList.add(e[i]);
       }
-      else if ((e[i].type=="Task") & (_tasks)){
-        eventList.add(e[i]);
-      }
-      else if ((e[i].type=="Reminder") & (_reminders)){
-        eventList.add(e[i]);
-      };
+      ;
     }
     return eventList;
   }
@@ -160,8 +171,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 context: context,
                 builder: (context) {
                   return AlertDialog(
-                    title: const Text("Info"),
-                    content: Text(_eventsMap.toString()),
+                    content: Text(prefs!.getString("events").toString()),
                     actions: [
                       TextButton(
                           onPressed: () {
@@ -225,16 +235,24 @@ class _MyHomePageState extends State<MyHomePage> {
                   _focusedDay = focusedDay;
                 },
               )),
+              //All events containers 
           ..._getEventsForDay(_selectedDay).map(
             (event) => Container(
               padding: const EdgeInsets.all(10),
               child: ListTile(
-                trailing: OutlinedButton(child: const Icon(Icons.clear_outlined, color: Colors.white,), onPressed: () {
-                  setState(() {
-                    _eventsMap[_selectedDay]!.remove(event);
-                    prefs.setString("events", json.encode(encodeMap(_eventsMap)));
-                  });
-                },),
+                trailing: OutlinedButton(
+                  child: const Icon(
+                    Icons.clear_outlined,
+                    color: Colors.white,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _eventsMap[_selectedDay]!.remove(event);
+                      prefs?.setString(
+                          "events", json.encode(encodeMap(_eventsMap)));
+                    });
+                  },
+                ),
                 shape: const RoundedRectangleBorder(
                     borderRadius: BorderRadius.all(Radius.circular(25))),
                 tileColor: eventTypeColor[event.type],
@@ -253,6 +271,7 @@ class _MyHomePageState extends State<MyHomePage> {
         ],
       )),
 
+      //Add event button
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           _awaitReturnValueFromSecondScreen(context);
@@ -260,6 +279,7 @@ class _MyHomePageState extends State<MyHomePage> {
         tooltip: 'Add Events',
         child: const Icon(Icons.add),
       ),
+      //Sidebar
       drawer: Drawer(
         child: SingleChildScrollView(
             child: Column(
@@ -340,6 +360,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
+//Second Screen
 class AddEventPage extends StatefulWidget {
   const AddEventPage({super.key});
 
@@ -354,6 +375,7 @@ class _AddEventPage extends State<AddEventPage> {
 
   var eventOptions = ["Event", "Task", "Reminder"];
 
+  //Sends event back to first screen as the wanted object
   void _sendDataBack(BuildContext context) {
     String title = titleController.text;
     String details = detailController.text;
@@ -416,7 +438,6 @@ class _AddEventPage extends State<AddEventPage> {
             Container(
                 padding: const EdgeInsets.all(5),
                 child: DropdownButtonFormField(
-                  /* Pode não dar muito fixe, se não der voltar ao DropDownButton */
                   decoration: const InputDecoration(
                       prefixIcon: Icon(Icons.calendar_month_outlined)),
                   value: _eventType,
@@ -443,6 +464,7 @@ class _AddEventPage extends State<AddEventPage> {
                 ))
           ],
         ),
+        //Sends us back to the first screen
         floatingActionButton: FloatingActionButton(
           onPressed: () {
             _sendDataBack(context);
